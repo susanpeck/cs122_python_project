@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# ignore the data files and do not upload to Github
+data/
+
 # Distribution / packaging
 .Python
 build/
