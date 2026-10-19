@@ -8,6 +8,7 @@ __pycache__/
 
 # ignore the data files and do not upload to Github
 data/
+Overview_2025-508.pdf
 
 # Distribution / packaging
 .Python

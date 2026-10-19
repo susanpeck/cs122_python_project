@@ -1,5 +1,5 @@
 # cs122_python_project
-SJSU Advanced Python Course Project
+This project was created for SJSU Advanced Python Course CS122.
 
 <One sentence describing what the app does and who it is for>
 
