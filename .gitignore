@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # ignore the data files and do not upload to Github
+OldFiles/
 data/
 Overview_2025-508.pdf
 
