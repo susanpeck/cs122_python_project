@@ -3,10 +3,10 @@ This project was created for SJSU Advanced Python Course CS122. This is a workin
 
 ## Authors
 - Susan Peck, GitHub: [susanpeck](https://github.com/susanpeck)
-- Kanishka Yadav, GitHub: <Kanishka's GitHub username>
+- Kanishka Yadav, GitHub: [kanishkay](https://github.com/kanishkay)
 
 ## Project Description
-This project is a Python application that retrieves state-level health survey estimates from the CDC's Behavioral Risk Factor Surveillance System (BRFSS) and lets users explore them interactively. The app downloads BRFSS prevalence data from 2011 onward from the CDC's open data portal and stores the selected indicators locally as CSV files. Users choose a health indicator, a state, and a range of years through a web interface. The app then analyzes how prevalence has changed over time and, where the data allow, how results for women compare with results for men. Results are displayed as plots with measures of uncertainty so that real differences can be told apart from sampling noise.
+This project is a Python application that retrieves state-level health survey estimates from the CDC's Behavioral Risk Factor Surveillance System (BRFSS) and lets users explore them interactively. The app downloads BRFSS prevalence data from 2011 onward from the CDC's open data portal and stores the selected indicators locally as CSV files. Users choose a health indicator, a state, and a range of years through a web interface. The app then analyzes how prevalence has changed over time and, where the data allow, how results for women compare with results for men. Results are displayed through interactive visualizations, including time-series plots and comparisons between states. Where available, confidence intervals will be included to help users understand the uncertainty associated with survey estimates.
 
 <!-- Uncomment and update the path once a screenshot is added to the repo -->
 <!-- ![Screenshot of the app](docs/screenshot.png) -->
