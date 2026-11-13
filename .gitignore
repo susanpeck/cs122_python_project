@@ -8,6 +8,10 @@ __pycache__/
 
 # ignore the data files and do not upload to Github
 data/
+data/raw/*.csv
+data/cleaned/*.csv
+data/metadata/*.json
+static/plots/*.png
 Overview_2025-508.pdf
 
 # Distribution / packaging
@@ -222,3 +226,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.idea/

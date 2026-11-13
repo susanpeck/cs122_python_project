@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Data Explorer | BRFSS State Health Explorer{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <p class="eyebrow">Partner 1 · Web Data Access</p>
+    <h1>BRFSS Data Explorer</h1>
+    <p>Retrieve one of the project’s 23 health measures, save it locally, and preview the organized data used by the application.</p>
+</section>
+
+<section class="card">
+    <h2>Retrieve BRFSS data</h2>
+    <p>Choose a focused slice of the CDC dataset. Each request is filtered, paginated, and saved locally so the app does not download all 3.2 million rows.</p>
+    <form method="post" action="{{ url_for('refresh_data') }}" class="filter-grid">
+        <label>
+            Health indicator
+            <select name="indicator">
+                {% for label, indicator in indicators %}
+                    <option value="{{ indicator }}" {% if indicator == refresh_indicator %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            Start year
+            <input type="number" name="start_year" value="{{ min_year }}" min="{{ min_year }}" max="{{ max_year }}">
+        </label>
+        <label>
+            End year
+            <input type="number" name="end_year" value="{{ max_year }}" min="{{ min_year }}" max="{{ max_year }}">
+        </label>
+        <label>
+            Group category
+            <select name="group_category">
+                {% for value, label in group_categories.items() %}<option value="{{ value }}" {% if value == selected_group_category %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>
+            Group value (optional)
+            <select name="group_value">
+                {% for value in group_values %}<option value="{{ value }}" {% if value == selected_group_value %}selected{% endif %}>{{ value or 'All values' }}</option>{% endfor %}
+            </select>
+        </label>
+        <button class="primary-button" type="submit">Refresh CDC data</button>
+    </form>
+    <form method="post" action="{{ url_for('load_data') }}" class="inline-form">
+        <button class="secondary-button" type="submit">Load existing local data</button>
+        <span class="help-text">Use local data without making another internet request.</span>
+    </form>
+    <p class="help-text">If refresh fails, the previous cleaned file is preserved. A request is limited to 250,000 rows for safety.</p>
+</section>
+
+<section class="summary-grid">
+    <div class="stat-card"><span>Rows loaded</span><strong>{{ "{:,}".format(row_count) }}</strong></div>
+    <div class="stat-card"><span>Measures supported</span><strong>{{ indicators|length }}</strong></div>
+    <div class="stat-card"><span>Measures loaded</span><strong>{{ loaded_measure_count }}</strong></div>
+    <div class="stat-card"><span>Years available</span><strong>{{ years|length }}</strong></div>
+</section>
+
+<section class="card">
+    <div class="section-heading">
+        <div>
+            <h2>Local cleaned-data preview</h2>
+            <p>Filter the saved file before sending it to the Analysis Dashboard.</p>
+        </div>
+    </div>
+    <form method="get" action="{{ url_for('home') }}" class="filter-grid preview-controls">
+        <label>
+            Indicator
+            <select name="indicator">
+                <option value="" {% if not preview_indicator %}selected{% endif %}>All indicators</option>
+                {% for label, indicator in indicators %}<option value="{{ indicator }}" {% if indicator == preview_indicator %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>
+            State
+            <select name="state">
+                <option value="" {% if not selected_state %}selected{% endif %}>All states</option>
+                {% for state in states %}<option value="{{ state }}" {% if state == selected_state %}selected{% endif %}>{{ state }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Start year <input type="number" name="start_year" value="{{ selected_start_year }}" min="{{ min_year }}" max="{{ max_year }}"></label>
+        <label>End year <input type="number" name="end_year" value="{{ selected_end_year }}" min="{{ min_year }}" max="{{ max_year }}"></label>
+        <label>
+            Preview rows
+            <select name="preview_rows">
+                {% for count in [10, 25, 50, 100] %}<option value="{{ count }}" {% if count == preview_rows %}selected{% endif %}>{{ count }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="checkbox-label"><input type="checkbox" name="show_intervals" {% if show_intervals %}checked{% endif %}> Show confidence limits</label>
+        <button class="secondary-button" type="submit">Apply preview filters</button>
+    </form>
+    {% if data.empty %}
+        <div class="empty-state">No cleaned data are available yet. Use the refresh form above or place a cleaned CSV in the data folder.</div>
+    {% else %}
+        <div class="table-wrapper">
+            <table>
+                <thead><tr>{% for column in data.columns %}{% if show_intervals or column not in ['confidence_limit_low', 'confidence_limit_high'] %}<th>{{ column_labels.get(column, column|replace('_', ' ')|title) }}</th>{% endif %}{% endfor %}</tr></thead>
+                <tbody>
+                    {% for row in data.head(preview_rows).to_dict(orient="records") %}
+                    <tr>{% for column in data.columns %}{% if show_intervals or column not in ['confidence_limit_low', 'confidence_limit_high'] %}<td>{{ row[column]|display_value }}</td>{% endif %}{% endfor %}</tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
