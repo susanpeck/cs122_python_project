@@ -1,16 +1,23 @@
+# stores files or locations as an object
 from pathlib import Path
 
+# flask runs the website
 from flask import Flask, flash, redirect, render_template, request, url_for
+
+# pandas handles data
 import pandas as pd
 
+# import functions created in other files
 from data_cleaner import MAX_YEAR, MIN_YEAR, clean_brfss_data
-from data_loader import load_cleaned_data, refresh_brfss_data
+from data_loader import load_cleaned_data, refresh_brfss_data # reads saved CSV file, downloads from CDC
 
-
-BASE_DIR = Path(__file__).resolve().parent
-RAW_DIR = BASE_DIR / "data" / "raw"
-CLEANED_DIR = BASE_DIR / "data" / "cleaned"
+# file locations
+BASE_DIR = Path(__file__).resolve().parent # file path that app.py is in
+RAW_DIR = BASE_DIR / "data" / "raw" # each new download saved to raw folder
+CLEANED_DIR = BASE_DIR / "data" / "cleaned" # combined clean data saved to cleaned folder
 CLEANED_FILE = CLEANED_DIR / "brfss_cleaned.csv"
+
+# dictionary of 23 short labels paired with full CDC question text
 MEASURE_QUESTIONS = {
     "Any alcohol (past 30 days)": "Adults who have had at least one drink of alcohol within the past 30 days",
     "Any exercise (past month)": "During the past month, did you participate in any physical activities? (variable calculated from one or more BRFSS questions)",
@@ -36,7 +43,11 @@ MEASURE_QUESTIONS = {
     "Stroke": "Ever told you had a stroke?",
     "Weight category (BMI)": "Weight classification by Body Mass Index (BMI) (variable calculated from one or more BRFSS questions)",
 }
+# The health measure shown by default
 DEFAULT_INDICATOR = MEASURE_QUESTIONS["Current smoking"]
+
+# Break-out categories offered in the dropdown, mapped to the label shown on the page
+# The empty string means no category filter.
 GROUP_CATEGORIES = {
     "": "All population groups",
     "Overall": "Overall",
@@ -45,11 +56,17 @@ GROUP_CATEGORIES = {
     "Education Attained": "Education",
     "Race/Ethnicity": "Race/ethnicity",
 }
+
+# GROUP_VALUES are the 16 groups kept from the dataset build decisions
+# Overall, Female, Male, 6 age groups, 4 education levels, White, Black, Hispanic
+# The empty string means all groups
 GROUP_VALUES = [
     "", "Overall", "Female", "Male", "18-24", "25-34", "35-44", "45-54", "55-64", "65+",
     "College graduate", "H.S. or G.E.D.", "Less than H.S.",
     "Some post-H.S.", "White, non-Hispanic", "Black, non-Hispanic", "Hispanic",
 ]
+
+# Lowercase column names from the CDC download, mapped to readable table headings
 COLUMN_LABELS = {
     "year": "Year",
     "locationabbr": "State code",
@@ -73,12 +90,52 @@ app.config["SECRET_KEY"] = "cs122-development-key"
 
 @app.template_filter("display_value")
 def display_value(value):
-    """Show CDC-suppressed estimates in a user-friendly way."""
+    """
+    Show CDC-suppressed estimates in a user-friendly way
+
+    CDC leaves an estimate blank when too few people in a group answered.
+    Registered as a Jinja template filter, so the HTML template calls it as
+    {{ value | display_value }}
+
+    Parameters
+    ----------
+    value : object
+        One cell from the data table, usually a number or NaN
+
+    Returns
+    -------
+    object
+        The string "Data not available" when the value is missing, otherwise
+        the original value unchanged
+    """
     return "Data not available" if pd.isna(value) else value
 
 
 def explorer_context(data, selected=None, option_data=None):
-    """Build the values used by the Data Explorer template."""
+    """
+    Build the values used by the Data Explorer template
+
+    Collects the filtered table, the options for every dropdown, and the
+    choices currently made in the form, so the page redraws with the same
+    choices still selected
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Rows left after the filters from the page address are applied
+    selected : dict, optional
+        Form choices read from the page address, such as indicator, state,
+        start_year, end_year, group_category and group_value. Missing keys
+        count as no choice
+    option_data : pandas.DataFrame, optional
+        Full saved data used to fill the dropdown options, so options do not
+        disappear as filters narrow the table. Defaults to data when not given
+
+    Returns
+    -------
+    dict
+        Keyword values passed to render_template for data.html
+    """
     selected = selected or {}
     option_data = option_data if option_data is not None else data
     indicators = list(MEASURE_QUESTIONS.items())
@@ -123,7 +180,18 @@ def explorer_context(data, selected=None, option_data=None):
 
 @app.route("/")
 def home():
-    """Display the Partner 1 data explorer page."""
+    """
+    Display the Partner 1 data explorer page
+
+    Reads the saved cleaned CSV on every visit, then filters by measure,
+    state, year range, group category and group, in that order. Each filter
+    applies only when a choice was made in the form
+
+    Returns
+    -------
+    str
+        Rendered HTML for data.html
+    """
     all_data = load_cleaned_data(CLEANED_FILE)
     data = all_data.copy()
 
@@ -147,7 +215,19 @@ def home():
 
 @app.post("/refresh-data")
 def refresh_data():
-    """Request a filtered BRFSS sample and save raw and cleaned copies."""
+    """
+    Request a filtered BRFSS sample and save raw and cleaned copies
+
+    Checks the form's year range and measure, downloads matching rows through
+    the CDC API, and replaces any saved rows for the same measure and years.
+    A one-time message reports success or failure, and the saved file is left
+    unchanged when anything fails
+
+    Returns
+    -------
+    flask.Response
+        Redirect back to the home page
+    """
     indicator = request.form.get("indicator", "").strip() or DEFAULT_INDICATOR
     start_year = request.form.get("start_year", str(MIN_YEAR)).strip()
     end_year = request.form.get("end_year", str(MAX_YEAR)).strip()
@@ -190,7 +270,18 @@ def refresh_data():
 
 @app.post("/load-data")
 def load_data():
-    """Reload the existing local file without contacting the CDC."""
+    """
+    Reload the existing local file without contacting the CDC
+
+    Only checks that the saved cleaned file exists and shows a message. The
+    home page reads the saved file on every visit, so the reload happens
+    after the redirect
+
+    Returns
+    -------
+    flask.Response
+        Redirect back to the home page
+    """
     if CLEANED_FILE.exists():
         flash("Local cleaned data loaded successfully.", "success")
     else:
