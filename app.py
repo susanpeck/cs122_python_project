@@ -8,7 +8,7 @@ from flask import Flask, flash, redirect, render_template, request, url_for
 import pandas as pd
 
 # import functions created in other files
-from data_cleaner import MAX_YEAR, MIN_YEAR, clean_brfss_data
+from data_cleaner import MAX_YEAR, MIN_YEAR, MEASURE_QUESTIONS, clean_brfss_data
 from data_loader import load_cleaned_data, refresh_brfss_data # reads saved CSV file, downloads from CDC
 
 # file locations
@@ -17,32 +17,6 @@ RAW_DIR = BASE_DIR / "data" / "raw" # each new download saved to raw folder
 CLEANED_DIR = BASE_DIR / "data" / "cleaned" # combined clean data saved to cleaned folder
 CLEANED_FILE = CLEANED_DIR / "brfss_cleaned.csv"
 
-# dictionary of 23 short labels paired with full CDC question text
-MEASURE_QUESTIONS = {
-    "Any alcohol (past 30 days)": "Adults who have had at least one drink of alcohol within the past 30 days",
-    "Any exercise (past month)": "During the past month, did you participate in any physical activities? (variable calculated from one or more BRFSS questions)",
-    "Arthritis": "Adults who have been told they have arthritis",
-    "Asthma (current)": "Adults who have been told they currently have asthma (variable calculated from one or more BRFSS questions)",
-    "Asthma (ever)": "Adults who have ever been told they have asthma (variable calculated from one or more BRFSS questions)",
-    "Binge drinking": "Binge drinkers (males having five or more drinks on one occasion, females having four or more drinks on one occasion) (variable calculated from one or more BRFSS questions)",
-    "COPD": "Ever told you have COPD?",
-    "Coronary heart disease": "Ever told you have angina or coronary heart disease?",
-    "Current smoking": "Adults who are current smokers (variable calculated from one or more BRFSS questions)",
-    "Depression": "Ever told you that you have a form of depression?",
-    "Diabetes": "Have you ever been told by a doctor that you have diabetes?",
-    "Fair or poor health": "How is your general health?",
-    "Flu shot (ages 65+)": "Adults aged 65+ who have had a flu shot within the past year (variable calculated from one or more BRFSS questions)",
-    "General health rating": "How is your general health?",
-    "Health insurance (ages 18-64)": "Adults aged 18-64 who have any kind of health care coverage (variable calculated from one or more BRFSS questions)",
-    "Heart attack": "Ever told you had a heart attack (myocardial infarction)?",
-    "Kidney disease": "Ever told you have kidney disease?",
-    "Other cancer": "Ever told you have any other types of cancer?",
-    "Pneumonia vaccine (ages 65+)": "Adults aged 65+ who have ever had a pneumonia vaccination (variable calculated from one or more BRFSS questions)",
-    "Skin cancer": "Ever told you have skin cancer?",
-    "Smoking status": "Four Level Smoking Status (variable calculated from one or more BRFSS questions)",
-    "Stroke": "Ever told you had a stroke?",
-    "Weight category (BMI)": "Weight classification by Body Mass Index (BMI) (variable calculated from one or more BRFSS questions)",
-}
 # The health measure shown by default
 DEFAULT_INDICATOR = MEASURE_QUESTIONS["Current smoking"]
 
