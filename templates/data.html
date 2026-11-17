@@ -89,6 +89,9 @@
         <label class="checkbox-label"><input type="checkbox" name="show_intervals" {% if show_intervals %}checked{% endif %}> Show confidence limits</label>
         <button class="secondary-button" type="submit">Apply preview filters</button>
     </form>
+    {% if measure_note %}
+        <div class="alert note">{{ measure_note }}</div>
+    {% endif %}
     {% if data.empty %}
         <div class="empty-state">No cleaned data are available yet. Use the refresh form above or place a cleaned CSV in the data folder.</div>
     {% else %}
