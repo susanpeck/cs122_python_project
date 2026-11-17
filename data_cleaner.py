@@ -60,6 +60,15 @@ MEASURE_QUESTIONS = {
     "Weight category (BMI)": "Weight classification by Body Mass Index (BMI) (variable calculated from one or more BRFSS questions)",
 }
 
+# Notes shown on the page when a measure is chosen, keyed by short label
+# Only measures with a change worth explaining to the user are listed
+MEASURE_NOTES = {
+    "Health insurance (ages 18-64)": (
+        "CDC changed the answer wording starting in 2021. Answers were merged into Yes and No. "
+        "A jump between 2020 and 2021 may reflect a change in how CDC calculates this measure."
+    ),
+}
+
 # The 23 question texts alone, built from MEASURE_QUESTIONS so the two can never disagree
 # frozenset is a set that cannot be changed after creation, data_loader.py imports APPROVED_QUESTIONS
 APPROVED_QUESTIONS = frozenset(MEASURE_QUESTIONS.values())
@@ -143,6 +152,9 @@ def clean_brfss_data(data: pd.DataFrame) -> pd.DataFrame:
         # casefold compares without capitalization, mask swaps in "Yes" or "No" where the match is True
         response = response.mask(response.str.casefold().eq("yes"), "Yes")
         response = response.mask(response.str.casefold().eq("no"), "No")
+        # Health insurance answers from 2021 on use new wording, renamed to match the earlier Yes and No
+        response = response.mask(response.str.casefold().eq("have some form of health insurance"), "Yes")
+        response = response.mask(response.str.casefold().eq("do not have some form of health insurance"), "No")
         cleaned["response"] = response
 
     # remove rows repeated in every column, then sort for a predictable order
