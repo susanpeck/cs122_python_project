@@ -7,8 +7,8 @@ from flask import Flask, flash, redirect, render_template, request, url_for
 # pandas handles data
 import pandas as pd
 
-# import functions created in other files
-from data_cleaner import MAX_YEAR, MIN_YEAR, MEASURE_QUESTIONS, clean_brfss_data
+# import functions and values created in other files
+from data_cleaner import MAX_YEAR, MIN_YEAR, MEASURE_NOTES, MEASURE_QUESTIONS, clean_brfss_data
 from data_loader import load_cleaned_data, refresh_brfss_data # reads saved CSV file, downloads from CDC
 
 # file locations
@@ -89,9 +89,9 @@ def explorer_context(data, selected=None, option_data=None):
     """
     Build the values used by the Data Explorer template
 
-    Collects the filtered table, the options for every dropdown, and the
-    choices currently made in the form, so the page redraws with the same
-    choices still selected
+    Collects the filtered table, the options for every dropdown, the
+    choices currently made in the form, and the note for the chosen measure,
+    so the page redraws with the same choices still selected
 
     Parameters
     ----------
@@ -124,6 +124,11 @@ def explorer_context(data, selected=None, option_data=None):
         group_values = sorted(set(group_values) | set(option_data["break_out"].dropna().unique()))
     refresh_indicator = selected.get("indicator") or DEFAULT_INDICATOR
     preview_indicator = selected.get("indicator", "")
+    # short label of the measure chosen in the preview filter, found by matching the question text
+    # next() returns the first match, or "" when no measure is chosen
+    preview_label = next(
+        (label for label, question in MEASURE_QUESTIONS.items() if question == preview_indicator), ""
+    )
     loaded_measure_count = (
         int(option_data["question"].nunique()) if "question" in option_data else 0
     )
@@ -140,6 +145,7 @@ def explorer_context(data, selected=None, option_data=None):
         "years": years,
         "refresh_indicator": refresh_indicator,
         "preview_indicator": preview_indicator,
+        "measure_note": MEASURE_NOTES.get(preview_label, ""),
         "selected_state": selected.get("state", ""),
         "selected_start_year": selected.get("start_year", ""),
         "selected_end_year": selected.get("end_year", ""),
