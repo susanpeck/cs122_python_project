@@ -46,6 +46,7 @@ th { position: sticky; top: 0; background: var(--pale-blue); color: var(--navy);
 .alert { margin-bottom: 1.25rem; }
 .alert.success { background: #e6f5eb; color: #216b39; }
 .alert.error { background: #fdebea; color: #9a302d; }
+.alert.note { background: var(--pale-blue); color: var(--muted); }
 code { background: #eef2f4; padding: .15rem .35rem; border-radius: 4px; }
 @media (max-width: 850px) {
     .navbar, .filter-grid { display: grid; gap: 1rem; }
