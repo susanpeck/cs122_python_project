@@ -48,6 +48,13 @@ th { position: sticky; top: 0; background: var(--pale-blue); color: var(--navy);
 .alert.error { background: #fdebea; color: #9a302d; }
 .alert.note { background: var(--pale-blue); color: var(--muted); }
 code { background: #eef2f4; padding: .15rem .35rem; border-radius: 4px; }
+/* Analysis page */
+[hidden] { display: none !important; }
+.form-actions { display: flex; align-items: center; gap: 1rem; }
+.reset-link { color: var(--blue); font-size: .9rem; }
+.plot-image { display: block; width: 100%; height: auto; }
+.plot-footnotes p { margin: .4rem 0 0; }
+.download-link { display: inline-block; margin-top: 1rem; padding: .75rem 1rem; border-radius: 7px; font-weight: 700; text-decoration: none; }
 @media (max-width: 850px) {
     .navbar, .filter-grid { display: grid; gap: 1rem; }
     .inline-form { align-items: flex-start; flex-direction: column; }
