@@ -13,6 +13,7 @@ data/raw/*.csv
 data/cleaned/*.csv
 data/metadata/*.json
 static/plots/*.png
+static/plots/*.csv
 Overview_2025-508.pdf
 
 # Distribution / packaging
