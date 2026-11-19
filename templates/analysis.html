@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Analysis Dashboard | BRFSS State Health Explorer{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Trends Over Time</h1>
+    <p>Plot one health measure for one state from {{ min_year if has_data else 2011 }} to {{ max_year if has_data else 2025 }}, comparing population groups or comparing survey responses.</p>
+</section>
+
+{% if not has_data %}
+    <div class="empty-state">No cleaned data are available yet. Use the Data Explorer to refresh CDC data first.</div>
+{% else %}
+<section class="card">
+    <h2>Choose what to plot</h2>
+    <form method="get" action="{{ url_for('analysis_dashboard') }}" class="filter-grid">
+        <!-- marks the request as a submitted form, so an unchecked checkbox is read as off -->
+        <input type="hidden" name="submitted" value="1">
+        <label>
+            Health measure
+            <select name="measure" id="measure">
+                {% for label in measures %}<option value="{{ label }}" {% if label == choices.measure %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>
+            State
+            <select name="state">
+                {% for state in states %}<option value="{{ state }}" {% if state == choices.state %}selected{% endif %}>{{ state }}</option>{% endfor %}
+            </select>
+        </label>
+        <!-- shown only for measures with more than two survey responses -->
+        <label class="checkbox-label" id="compare-field"><input type="checkbox" name="compare_responses" id="compare-responses" {% if choices.compare_responses %}checked{% endif %}> Compare survey response options</label>
+        <label id="category-field">
+            Group category
+            <select name="group_category">
+                {% for category in group_categories %}<option value="{{ category }}" {% if category == choices.group_category %}selected{% endif %}>{{ group_category_labels[category] }}</option>{% endfor %}
+            </select>
+        </label>
+        <label id="group-field">
+            Group
+            <select name="group">
+                {% for group in groups %}<option value="{{ group }}" {% if group == choices.group %}selected{% endif %}>{{ group }}</option>{% endfor %}
+            </select>
+        </label>
+        <label id="answer-field">
+            Survey Response
+            <select name="answer" id="answer">
+                {% for answer in answer_lookup.get(choices.measure, []) %}<option value="{{ answer }}" {% if answer == choices.answer %}selected{% endif %}>{{ answer }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>
+            Start year
+            <input type="number" name="start_year" value="{{ choices.start_year }}" min="{{ min_year }}" max="{{ max_year }}" required>
+        </label>
+        <label>
+            End year
+            <input type="number" name="end_year" value="{{ choices.end_year }}" min="{{ min_year }}" max="{{ max_year }}" required>
+        </label>
+        <label class="checkbox-label"><input type="checkbox" name="show_intervals" {% if choices.show_intervals %}checked{% endif %}> Show 95% confidence bands</label>
+        <div class="form-actions">
+            <button class="primary-button" type="submit">Update plot</button>
+            <a class="reset-link" href="{{ url_for('analysis_dashboard', reset=1) }}">Reset choices</a>
+        </div>
+    </form>
+    <p class="help-text view-description" id="view-description"></p>
+    <p class="help-text">Years run from {{ min_year }} to {{ max_year }}.</p>
+</section>
+
+{% if measure_note %}
+    <div class="alert note">{{ measure_note }}</div>
+{% endif %}
+{% if error %}
+    <div class="alert error">{{ error }}</div>
+{% endif %}
+
+{% if plot_url %}
+<section class="card">
+    <img class="plot-image" src="{{ plot_url }}" alt="{{ plot_title }}">
+    <!-- the download route sends the file as an attachment named from file_stem -->
+    <a class="secondary-button download-link" href="{{ url_for('download_analysis_file', kind='png', name=file_stem) }}" download>Download plot (PNG)</a>
+    <div class="plot-footnotes">
+        {% if no_data_years %}
+            <p class="help-text">No data reported for {{ choices.state }} in {{ no_data_years|join(', ') }}.</p>
+        {% endif %}
+        {% for line, years in missing.items() %}
+            <p class="help-text">Data not available for {{ line }} in {{ years|join(', ') }}.</p>
+        {% endfor %}
+        {% if missing %}<p class="help-text">CDC withholds estimates when too few people in a group answered.</p>{% endif %}
+    </div>
+</section>
+
+<section class="card">
+    <h2>{{ plot_title }}, by Year{% if show_intervals %} (95% CI){% endif %}</h2>
+    <div class="table-wrapper">
+        <table>
+            <thead><tr><th>Year</th>{% for column in table.columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+            <tbody>
+                {% for year, row in table.iterrows() %}
+                <tr><td>{{ year }}</td>{% for column in table.columns %}<td>{{ row[column]|display_value }}</td>{% endfor %}</tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a class="secondary-button download-link" href="{{ url_for('download_analysis_file', kind='csv', name=file_stem) }}" download>Download table (CSV)</a>
+    <p class="help-text">The CSV has the percent and both 95% confidence limits in separate columns for every year. Empty cells mean no estimate.</p>
+</section>
+{% endif %}
+
+<script>
+    // values sent by the route: survey responses per measure, preselected response, groups per category, group wording
+    const answersByMeasure = {{ answer_lookup|tojson }}
+    const defaultAnswers = {{ default_answers|tojson }}
+    const groupOrder = {{ group_order|tojson }}
+    const groupDescriptions = {{ group_descriptions|tojson }}
+
+    const measureSelect = document.getElementById("measure")
+    const answerSelect = document.getElementById("answer")
+    const compareBox = document.getElementById("compare-responses")
+    const categorySelect = document.querySelector('select[name="group_category"]')
+    const groupSelect = document.querySelector('select[name="group"]')
+
+    // refill the Survey Response dropdown with the responses of the newly chosen measure
+    function refillAnswers() {
+        const answers = answersByMeasure[measureSelect.value] || []
+        const preferred = defaultAnswers[measureSelect.value]
+        answerSelect.innerHTML = ""
+        for (const answer of answers) {
+            const option = document.createElement("option")
+            option.value = answer
+            option.textContent = answer
+            option.selected = answer === preferred
+            answerSelect.appendChild(option)
+        }
+    }
+
+    // show the checkbox only for measures with more than two responses, then show the fields for the current mode
+    function showFields() {
+        const answers = answersByMeasure[measureSelect.value] || []
+        const hasCheckbox = answers.length > 2
+        document.getElementById("compare-field").hidden = !hasCheckbox
+        // a two-response measure always compares groups, so the hidden checkbox is cleared
+        if (!hasCheckbox) {
+            compareBox.checked = false
+        }
+        const comparingResponses = compareBox.checked
+        document.getElementById("category-field").hidden = comparingResponses
+        document.getElementById("answer-field").hidden = comparingResponses
+        document.getElementById("group-field").hidden = !comparingResponses
+        describeView()
+    }
+
+    // one plain sentence under the form saying what the plot will show
+    function describeView() {
+        const description = document.getElementById("view-description")
+        if (!compareBox.checked) {
+            const groups = groupOrder[categorySelect.value] || []
+            description.textContent = "Percent who answered " + answerSelect.value + ", for each group: " + groups.join(", ") + "."
+        } else {
+            const answers = answersByMeasure[measureSelect.value] || []
+            // Overall reads as "all adults", other groups use the same wording as the plot title
+            const who = groupSelect.value === "Overall" ? "all adults" : (groupDescriptions[groupSelect.value] || groupSelect.value)
+            description.textContent = "Percent choosing each response option (" + answers.join(", ") + "), for " + who + "."
+        }
+    }
+
+    measureSelect.addEventListener("change", function () {
+        refillAnswers()
+        showFields()
+    })
+    compareBox.addEventListener("change", showFields)
+    for (const control of [answerSelect, categorySelect, groupSelect]) {
+        control.addEventListener("change", describeView)
+    }
+    showFields()
+</script>
+{% endif %}
+{% endblock %}

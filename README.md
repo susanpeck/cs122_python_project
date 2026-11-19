@@ -27,8 +27,8 @@ The interface is a web application built with Flask and run locally in a web bro
 - **Source:** the CDC's BRFSS Prevalence Data (2011 to present), dataset ID dttw-5yxu, on data.cdc.gov.
 - **Method:** the app requests a CSV from the portal's API, with filters in the request for the chosen indicators and years, and reads it into a pandas table. The exact request and the available filter columns will be confirmed by testing against the live dataset.
 - **Cleaning:** keep only state-level rows (any national or other non-state rows are removed), convert the estimate and confidence limit columns to numbers, and keep one row per state, year, indicator, and group.
-- **Storage:** one cleaned CSV file per indicator in the `data` folder, with the same column names in every file so the analysis code can read any of them the same way. The raw download is kept separately from the cleaned file.
-- **Refresh:** the refresh button downloads the data again and replaces the stored files. If the download fails, the app keeps using the existing local files and shows a status message.
+- **Storage:** the application keeps one shared cleaned CSV at `data/cleaned/brfss_cleaned.csv`. A refresh replaces only the selected measure, year range, and optional population-group slice, preserving other measures already stored. Each raw API response is saved separately in `data/raw/`.
+- **Refresh:** the refresh button makes a filtered, paginated API request and merges the result into the shared cleaned file. If the download or validation fails, the existing cleaned CSV is preserved and the app shows a status message.
 
 ### Data Analysis and Visualization Plan
 The exact analysis depends on which columns the BRFSS prevalence data contains, such as confidence limits, sample sizes, and a sex breakout. These will be confirmed by inspecting the downloaded file, and this plan will be updated to match.
@@ -85,7 +85,7 @@ mkdir data
 ## Usage
 Launch the app with:
 ```
-<command to start the app, for example python code/main.py>
+python app.py
 ```
 
 Then open the address shown in the terminal in a web browser.
@@ -101,18 +101,19 @@ cs122_python_project
  |- LICENSE
  |- README.md
  |- .gitignore
- |- code
-     |- <main file>.py
- |- notebooks
-     |- BRFSS_FirstLook_v1.0.ipynb
+ |- app.py
+ |- data_cleaner.py
+ |- data_loader.py
+ |- templates
+ |- static
  |- data        (not tracked by git)
 ```
 
 ## Dependencies
-- Python <version>
-- GUI toolkit: Flask (web interface)
-- Web data libraries: <to be decided>
-- Other: pandas, numpy, scipy, matplotlib
+- Python 3.10+
+- Flask (web interface)
+- pandas (cleaning and local data loading)
+- requests (CDC Socrata API access)
 
 ## Limitations and notes
 - Known issues: <issue>
